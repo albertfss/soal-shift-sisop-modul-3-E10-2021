@@ -32,25 +32,20 @@ int main() {
     int i, j, k;
 
     printf("Matriks 1 (4 x 3) :\n");
-    for(i = 0; i < r1; i++) {
-        for(j = 0; j < c1; i++) {
-            scanf("%d", &matrix1);
-        }
-    }
+    for (i = 0; i < r1; i++)
+        for (j = 0; j < c1; j++)
+            scanf("%d", &matrix1[i][j]);
 
     printf("Matriks 2 (3 x 6) :\n");
-    for(i = 0; i < r2; i++) {
-        for(j = 0; j < c2; j++) {
-            scanf("%d", &matrix2);
-        }
-    }
+    for (i = 0; i < r2; i++)
+        for (j = 0; j < c2; j++)
+            scanf("%d", &matrix2[i][j]);
 
     pthread_t *threadsid;
     threadsid = (pthread_t*)malloc((24)*sizeof(pthread_t));
 
     int count = 0;
     int *result = NULL;
-    int var;
 
     for(i = 0; i < r1; i++) {
         for(j = 0; j < c2; j++) {
@@ -65,8 +60,7 @@ int main() {
                 result[k+1+r1] = matrix2[i][k];
             }
 
-            var = pthread_create(&(threadsid[count++]), NULL, &multiplier,(void*) result);
-            if(var!=0) printf("\n can't create thread : [%s]",strerror(var));
+            pthread_create(&(threadsid[count++]), NULL, &multiplier,(void*) result);
         }
     }
 
