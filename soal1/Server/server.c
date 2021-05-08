@@ -253,7 +253,6 @@ void regis() {
         strcat(cat, ":");
         strcat(cat, password);
         fprintf(src, "%s:%s\n", username, password);
-        // fprintf(src, cat, NULL);
         char *success = "Register success\n";
         send(sd , success, strlen(success) , 0 );
     }
