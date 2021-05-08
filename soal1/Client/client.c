@@ -41,31 +41,22 @@ int main(int argc, char const *argv[]) {
 
     while(1) {
         pthread_create(&thread[0], NULL, output, NULL);
-        // if(flag) {
-            pthread_create(&thread[1], NULL, input, NULL);
-            // printf("input diterima\n");
-            pthread_join(thread[0], NULL);
-            pthread_join(thread[1], NULL);
+        pthread_create(&thread[1], NULL, input, NULL);
+        pthread_join(thread[0], NULL);
+        pthread_join(thread[1], NULL);
         
     }
     return 0;
 }
 
 void *output(void *arg) {
-    // while(1) {
-        char buffer[1024] = {};
-        valread = read(sock, buffer, 1024);
-        printf("%s\n",buffer);
-        // strcpy(buffer, "\0");
-        // fflush(stdout);
-        
-    // }
+    char buffer[1024] = {};
+    valread = read(sock, buffer, 1024);
+    printf("%s\n",buffer);
 }
 
 void *input(void *arg) {
-    // while(1) {
-        char buffer[1024] = {};
-        scanf("%s", buffer);
-        send(sock, buffer, sizeof(buffer), 0);
-    // }
+    char buffer[1024] = {};
+    scanf("%s", buffer);
+    send(sock, buffer, sizeof(buffer), 0);
 }
