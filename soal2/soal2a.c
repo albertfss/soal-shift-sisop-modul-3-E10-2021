@@ -32,14 +32,20 @@ int main() {
     int i, j, k;
 
     printf("Matriks 1 (4 x 3) :\n");
-    for (i = 0; i < r1; i++)
-        for (j = 0; j < c1; j++)
-            scanf("%d", &matrix1[i][j]);
+    for (i = 0; i < r1; i++) {
+        for (j = 0; j < c1; j++) { 
+             scanf("%d", &matrix1[i][j]);
+        }
+    }
+        
 
     printf("Matriks 2 (3 x 6) :\n");
-    for (i = 0; i < r2; i++)
-        for (j = 0; j < c2; j++)
+    for (i = 0; i < r2; i++) {
+        for (j = 0; j < c2; j++) { 
             scanf("%d", &matrix2[i][j]);
+        }
+    }
+        
 
     pthread_t *threadsid;
     threadsid=(pthread_t*)malloc((24)*sizeof(pthread_t));
