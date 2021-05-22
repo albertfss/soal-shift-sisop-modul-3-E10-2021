@@ -136,9 +136,11 @@
     Jika file ada di `files.tsv` maka dilakukan proses pengiriman yang mirip dengan soal **1C**.
 
 Sebelum diunduh:
+
 ![1dbefore](https://i.ibb.co/Yb0rzbg/Screenshot-from-2021-05-22-21-49-35.png)
 
 Sesudah diunduh:
+
 ![1dsesudah](https://i.ibb.co/FHMP5mN/Screenshot-from-2021-05-22-21-50-49.png)
 
 ## **1E**
