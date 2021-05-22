@@ -1,47 +1,84 @@
-#include <stdio.h> 
-#include <string.h>   //strlen 
-#include <stdlib.h> 
-#include <errno.h> 
-#include <unistd.h>   //close 
-#include <arpa/inet.h>    //close 
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+#include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define TRUE   1 
 #define FALSE  0 
 #define PORT 8080 
+#define DATA_BUFFER 1024
 
-int sd;
+int curr_fd = -1;
+char auth_user[2][DATA_BUFFER]; // [0] => id, [1] => pass
+const int SIZE_BUFFER = sizeof(char) * DATA_BUFFER;
 
-void login();
-void regis();
-bool checkId(FILE*, char*);
-void getInput(char*, char*);
+int create_tcp_server_socket();
 
+void *menu(void *argv);
+void login(int fd);
+void regist(int fd);
+void add(int fd);
+void download(char *filename, int fd);
+void delete(char *filename, int fd);
+void see(char *buff, int fd, bool isFind);
+void _log(char *cmd, char *filepath);
 
-int main() {
-    int server_fd, new_socket, valread, client_socket[30], max_clients = 30, activity, i;  
-    int max_sd, ready = 1, running = 0;
+int getInput(int fd, char *prompt, char *storage);
+int getCredentials(int fd, char *id, char *password);
+int writeFile(int fd, char *dirname, char *targetFileName);
+int sendFile(int fd, char *filename);
+char *getFileName(char *filePath);
+bool validLogin(FILE *fp, char *id, char *password);
+bool isRegistered(FILE *fp, char *id);
+bool alreadyDownloaded(FILE *fp, char *filename);
+void parseFilePath(char *filepath, char *raw_filename, char *ext);
+
+int main()
+{
+    socklen_t addrlen;
+    struct sockaddr_in new_addr;
+    pthread_t tid;
+    char buff[DATA_BUFFER];
+    int server_fd = create_tcp_server_socket();
+    int new_fd;
+    char *dirName = "FILES";
+    mkdir(dirName, 0777);
+
+    while (TRUE) {
+        new_fd = accept(server_fd, (struct sockaddr *)&new_addr, &addrlen);
+        if (new_fd >= 0) {
+            // printf("Accepted a new connection with fd: %d\n", new_fd);
+            pthread_create(&tid, NULL, &menu, (void *) &new_fd);
+        } else {
+            fprintf(stderr, "Accept failed [%s]\n", strerror(errno));
+        }
+    } 
+    return 0;
+}
+
+int create_tcp_server_socket()
+{
     struct sockaddr_in address;
-    int opt = TRUE;
+    int opt = TRUE, fd;
     int addrlen = sizeof(address);
 
     char buffer[1028];
 
     fd_set readfds;
 
-    for(i=0; i<max_clients; i++) 
-        client_socket[i] = 0;
-
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
       
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -50,224 +87,353 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
       
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
+    if (bind(fd, (struct sockaddr *)&address, sizeof(address))<0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 3) < 0) {
+    if (listen(fd, 3) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
+    return fd;
+}
 
-    while(TRUE) {
-        //clear the socket set 
-        FD_ZERO(&readfds);  
-     
-        //add master socket to set 
-        FD_SET(server_fd, &readfds);  
-        max_sd = server_fd;  
+void *menu(void *argv)
+{
+    int fd = *(int *) argv;
+    char cmd[DATA_BUFFER];
 
-        //add child sockets to set 
-        for ( i = 0 ; i < max_clients ; i++)  
-        {  
-            //socket descriptor 
-            sd = client_socket[i];  
-                 
-            //if valid socket descriptor then add to read list 
-            if(sd > 0)  
-                FD_SET( sd , &readfds);  
-                 
-            //highest file descriptor number, need it for the select function 
-            if(sd > max_sd)  
-                max_sd = sd;  
-        }  
+    while (recv(fd, cmd, DATA_BUFFER, MSG_PEEK | MSG_DONTWAIT) != 0) {
+        if (fd != curr_fd) {
+            if (getInput(fd, "\nSelect command:\n1. Login\n2. Register\n\n", cmd) == 0) break;
 
-        activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);  
-       
-        if ((activity < 0) && (errno!=EINTR))  
-        {  
-            printf("select error");  
-        }  
-             
-        //If something happened on the master socket , 
-        //then its an incoming connection 
-        if (FD_ISSET(server_fd, &readfds))  
-        {  
-            new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
-            if (new_socket < 0)
-            {  
-                perror("accept");  
-                exit(EXIT_FAILURE);  
+            if (strcmp(cmd, "login") == 0 || strcmp(cmd, "1") == 0) {
+                login(fd);
+            } 
+            else if (strcmp(cmd, "register") == 0 || strcmp(cmd, "2") == 0) {
+                regist(fd);
+            } 
+            else {
+                send(fd, "Error: Invalid command\n", SIZE_BUFFER, 0);
             }
-            if(ready && client_socket[0] == 0) {
-                char *welcome = "Server is ready!\nMenu : (case sensitive)\n1. 'register'\n2. 'login'\n\0";
-                if(send(new_socket, welcome, strlen(welcome), 0 ) == strlen(welcome)) {
-                    ready = 0;
-                    puts("Welcome message sent successfully");
-                }
-                else {
-                    perror("send");
-                    puts("Welcome message failed to send");
-                } 
+        } else { 
+            // login
+            char prompt[DATA_BUFFER];
+            strcpy(prompt, "\nSelect command:\n");
+            strcat(prompt, "1. Add\n");
+            strcat(prompt, "2. Download <filename with extension>\n");
+            strcat(prompt, "3. Delete <filename with extension>\n");
+            strcat(prompt, "4. See\n");
+            strcat(prompt, "5. Find <query string>\n\n");
+            if (getInput(fd, prompt, cmd) == 0) break;
+
+            if (strcmp(cmd, "add") == 0 || strcmp(cmd, "1") == 0) {
+                add(fd);
+            } 
+            else if (strcmp(cmd, "see") == 0 || strcmp(cmd, "4") == 0) {
+                see(cmd, fd, false);
             }
             else {
-                char *welcome_delay = "Server is busy!\nPlease wait for other client to process";
-                if(send(new_socket, welcome_delay, strlen(welcome_delay), 0 ) != strlen(welcome_delay)) {
-                    perror("send");
-                    puts("Welcome message failed to send");
+                char *tmp = strtok(cmd, " ");
+                char *tmp2 = strtok(NULL, " ");
+                if (!tmp2) {
+                    send(fd, "Error: Second argument not specified\n", SIZE_BUFFER, 0);
+                } 
+                else if (strcasecmp(tmp, "download") == 0) {
+                    download(tmp2, fd);
+                } 
+                else if (strcasecmp(tmp, "delete") == 0) {
+                    delete(tmp2, fd);
                 }
-                else puts("Welcome message sent successfully");
-            }
-                    
-            //add new socket to array of sockets 
-            for (i = 0; i < max_clients; i++)  
-            {  
-                //if position is empty 
-                if( client_socket[i] == 0 )  
-                {  
-                    client_socket[i] = new_socket;  
-                    printf("Adding to list of sockets as %d\n" , i);  
-                            
-                    break;  
-                }  
-            }  
-        }
-
-        for (i = 0; i < max_clients; i++)  
-        {  
-            sd = client_socket[i];  
-                 
-            if (FD_ISSET( sd , &readfds))  
-            {  
-                char buffer[1024] = {0};
-                valread = read( sd , buffer, 1024);  
-                if (valread == 0)  
-                {  
-                    //Somebody disconnected , get his details and print 
-                    getpeername(sd , (struct sockaddr*)&address , \
-                        (socklen_t*)&addrlen);  
-                    printf("Host disconnected , ip %s , port %d \n" , 
-                            inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
-                    //Close the socket and mark as 0 in list for reuse 
-                    close( sd );  
-                    client_socket[i] = 0; 
-                    int tempsocket = client_socket[0];
-                    for(int j = i; j < max_clients-1; j++) {
-                        client_socket[j] = client_socket[j+1];
-                        
-                    }
-                    client_socket[max_clients-1] = 0;
-                    ready = 1;
-
-                    if(client_socket[0] != 0 && ready && tempsocket == 0) {
-                        char *welcome = "Server is ready!\nMenu : (case sensitive)\n1. 'register'\n2. 'login'\n\0";
-                        send(client_socket[0], welcome, strlen(welcome), 0 );
-                        ready = 0;
-                    } else {
-                        ready = 1;
-                    }
-                }   
+                else if (strcasecmp(tmp, "find") == 0) {
+                    see(tmp2, fd, true);
+                }
                 else {
-                    if(!ready && sd == client_socket[0]) {
-                        if(strcmp(buffer, "login") == 0) {
-                            login();
-                        }
-                        else if(strcmp(buffer, "register") == 0) {
-                            regis();
-                        } 
-                        else {
-                            char *invalid = "invalid command\0";
-                            send(sd , invalid, strlen(invalid) , 0 );
-                        }
-                    }
-                    else {
-                        char *welcome_delay = "Server is busy!\nPlease wait for other client to process\0";
-                        if(send(sd, welcome_delay, strlen(welcome_delay), 0 ) != strlen(welcome_delay)) {
-                            perror("send");
-                            puts("Message failed to send");
-                }
-                    }
+                    send(fd, "Error: Invalid command\n", SIZE_BUFFER, 0);
                 }
             }
         }
     }
+    if (fd == curr_fd) {
+        curr_fd = -1;
+    }
+    close(fd);
+}
+
+void see(char *buff, int fd, bool isFind)
+{
+    int counter = 0;
+    FILE *src = fopen("files.tsv", "r");
+    if (!src) {
+        write(fd, "Files.tsv not found\n", SIZE_BUFFER);
+        return;
+    }
+
+    char temp[DATA_BUFFER + 85], raw_filename[DATA_BUFFER/3], ext[5],
+        filepath[DATA_BUFFER/3], publisher[DATA_BUFFER/3], year[10];
+        
+    while (fscanf(src, "%s\t%s\t%s", filepath, publisher, year) != EOF) {
+        parseFilePath(filepath, raw_filename, ext);
+        if (isFind && strstr(raw_filename, buff) == NULL) continue;
+        counter++;
+
+        sprintf(temp, 
+            "Nama: %s\nPublisher: %s\nTahun publishing: %s\nEkstensi File: %s\nFilepath: %s\n\n",
+            raw_filename, publisher, year, ext, filepath
+        );
+        write(fd, temp, SIZE_BUFFER);
+    }
+    if(counter == 0) {
+        if (isFind) write(fd, "Query not found in files.tsv\n", SIZE_BUFFER);
+        else write(fd, "Empty files.tsv\n", SIZE_BUFFER);
+    } 
+    fclose(src);
+}
+
+void delete(char *filename, int fd)
+{
+    FILE *fp = fopen("files.tsv", "a+");
+    char db[DATA_BUFFER], currFilePath[DATA_BUFFER], publisher[DATA_BUFFER], year[DATA_BUFFER];
+
+    if (alreadyDownloaded(fp, filename)) {
+        rewind(fp);
+        FILE *tmp_fp = fopen("temp.tsv", "a+");
+
+        // Copy files.tsv to temp
+        while (fgets(db, SIZE_BUFFER, fp)) {
+            sscanf(db, "%s\t%s\t%s", currFilePath, publisher, year);
+            if (strcmp(getFileName(currFilePath), filename) != 0) { 
+                fprintf(tmp_fp, "%s", db);
+            }
+            memset(db, 0, SIZE_BUFFER);
+        }
+        fclose(tmp_fp);
+        fclose(fp);
+        remove("files.tsv");
+        rename("temp.tsv", "files.tsv");
+
+        char deletedFileName[DATA_BUFFER];
+        sprintf(deletedFileName, "FILES/%s", filename);
+
+        char newFileName[DATA_BUFFER];
+        sprintf(newFileName, "FILES/old-%s", filename);
+
+        rename(deletedFileName, newFileName);
+        send(fd, "Delete file success\n", SIZE_BUFFER, 0);
+        _log("delete", filename);
+    } 
+    else {
+        send(fd, "Error: File hasn't been downloaded\n", SIZE_BUFFER, 0);
+        fclose(fp);
+    }
+}
+
+void download(char *filename, int fd)
+{
+    FILE *fp = fopen("files.tsv", "a+");
+    if (alreadyDownloaded(fp, filename)) {
+        sendFile(fd, filename);
+    } else {
+        send(fd, "Error: File hasn't been downloaded\n", SIZE_BUFFER, 0);
+    }
+    fclose(fp);
+}
+
+void add(int fd)
+{
+    char *dirName = "FILES";
+    char publisher[DATA_BUFFER], year[DATA_BUFFER], client_path[DATA_BUFFER];
+    if (getInput(fd, "Publisher: ", publisher) == 0) return;
+    if (getInput(fd, "Tahun Publikasi: ", year) == 0) return;
+    if (getInput(fd, "Filepath: ", client_path) == 0) return;
+
+    FILE *fp = fopen("files.tsv", "a+");
+    char *fileName = getFileName(client_path);
+
+    if (alreadyDownloaded(fp, fileName)) {
+        send(fd, "Error: file is already uploaded\n", SIZE_BUFFER, 0);
+    } else {
+        send(fd, "Start sending file\n", SIZE_BUFFER, 0);
+        if (writeFile(fd, dirName, fileName) == 0) {
+            fprintf(fp, "%s/%s\t%s\t%s\n", dirName, fileName, publisher, year);
+            printf("Store file finished\n");
+            _log("add", fileName);
+        } else {
+            printf("Error occured when receiving file\n");
+        }
+    }
+    fclose(fp);
+}
+
+void login(int fd)
+{
+    if (curr_fd != -1) {
+        send(fd, "Server is busy. Please wait until other client has logout.\n", SIZE_BUFFER, 0);
+        return;
+    }
+    char id[DATA_BUFFER], password[DATA_BUFFER];
+    FILE *fp = fopen("akun.txt", "a+");
+
+    if (getCredentials(fd, id, password) != 0) {
+        if (validLogin(fp, id, password)) {
+            send(fd, "Login success\n", SIZE_BUFFER, 0);
+            curr_fd = fd;
+            strcpy(auth_user[0], id);
+            strcpy(auth_user[1], password);
+        } else {
+            send(fd, "Wrong ID or Password\n", SIZE_BUFFER, 0);
+        }
+    }
+    fclose(fp);
+}
+
+void regist(int fd)
+{
+    char id[DATA_BUFFER], password[DATA_BUFFER];
+    FILE *fp = fopen("akun.txt", "a+");
+
+    if (getCredentials(fd, id, password) != 0) {
+        if (isRegistered(fp, id)) {
+            send(fd, "ID is already registered\n", SIZE_BUFFER, 0);
+        } else {
+            fprintf(fp, "%s:%s\n", id, password);
+            send(fd, "Register success. Account created\n", SIZE_BUFFER, 0);
+        }
+    }
+    fclose(fp);
+}
+
+void _log(char *cmd, char *filename)
+{
+    FILE *fp = fopen("running.log", "a+");
+    cmd = (strcmp(cmd, "add") == 0) ? "Tambah" : "Hapus";
+    fprintf(fp, "%s : %s (%s:%s)\n", cmd, filename, auth_user[0], auth_user[1]);
+    fclose(fp);
+}
+
+void parseFilePath(char *filepath, char *raw_filename, char *ext)
+{
+    char *temp;
+    if (temp = strrchr(filepath, '.')) strcpy(ext, temp + 1);
+    else strcpy(ext, "-");
+
+    strcpy(raw_filename, getFileName(filepath));
+    strtok(raw_filename, ".");
+}
+
+int sendFile(int fd, char *filename)
+{
+    char buff[DATA_BUFFER] = {0};
+    int valread;
+    printf("Sending [%s] file to client\n", filename);
+    strcpy(buff, filename);
+    sprintf(filename, "FILES/%s", buff);
+    FILE *fp = fopen(filename, "r");
+
+    if (!fp) {
+        printf("File not found\n");
+        send(fd, "File not found\n", SIZE_BUFFER, 0);
+        return -1;
+    }
+    send(fd, "Start receiving file\n", SIZE_BUFFER, 0);
+    send(fd, buff, SIZE_BUFFER, 0);
+
+    // Transfer size
+    fseek(fp, 0L, SEEK_END);
+    int size = ftell(fp);
+    rewind(fp);
+    sprintf(buff, "%d", size);
+    send(fd, buff, SIZE_BUFFER, 0);
+
+    while ((valread = fread(buff, 1, DATA_BUFFER, fp)) > 0) {
+        send(fd, buff, valread, 0);
+    }
+    recv(fd, buff, DATA_BUFFER, 0);
+    printf("Send file finished\n");
+    fclose(fp);
     return 0;
 }
 
-void getInput(char* username, char* password) {
-    char unm[1024] = "enter username\0";
-    send(sd , unm, strlen(unm) , 0 );
-    read(sd, username, 1024);
-    char pswd[1024] = "enter password\0";
-    send(sd , pswd, strlen(pswd) , 0 );
-    read(sd, password, 1024);
+int writeFile(int fd, char *dirname, char *targetFileName)
+{
+    int valread, size;
+    char buff[DATA_BUFFER] = {0};
+    char in[1];
+
+    valread = read(fd, buff, DATA_BUFFER);
+    if (valread == 0 || strcmp(buff, "File found") != 0) {
+        if (valread == 0) printf("Connection to client lost\n");
+        else puts(buff);
+        return -1;
+    }
+    read(fd, buff, SIZE_BUFFER);
+    size = atoi(buff);
+
+    printf("Store [%s] file from client\n", targetFileName);
+    sprintf(buff, "%s/%s", dirname,targetFileName);
+    FILE *fp = fopen(buff, "w+");
+
+    while ((size--) > 0) {
+        if ((valread = read(fd, in, 1)) < 0)
+            return valread;
+        fwrite(in, 1, 1, fp);
+    }
+    valread = 0;
+    printf("Storing file finished\n");
+    fclose(fp);
+    return valread;
 }
 
-void login() {
-    char username[1024] = {};
-    char password[1024] = {};
-    FILE *src = fopen("akun.txt", "a+");
-    getInput(username, password);
-    char comb[2049] = {};
-    sprintf(comb, "%s:%s\n", username, password);
-    char file[1024] = {};
-    int info = 0;
-    if(checkId(src, username)) {
-        FILE *src = fopen("akun.txt", "a+");
-        while(fgets(file, 1024, src) != NULL) {
-            printf("%s - %s",file,comb);
-            if(strcmp(file, comb) == 0) {
-                char *success = "Login success\n";
-                send(sd , success, strlen(success) , 0 );
-                info = 1;
-                
-            }
-        }
-        if(info == 0) {
-            char *fail = "Wrong password";
-            send(sd , fail, strlen(fail) , 0 );
-        }
-        printf("%d\n",info);
-    }
-    else {
-        char *notExist = "ID not found\n";
-        send(sd , notExist, strlen(notExist) , 0 );
-    }
-    fclose(src);
+char *getFileName(char *filePath)
+{
+    char *ret = strrchr(filePath, '/');
+    if (ret) return ret + 1;
+    else return filePath;
 }
 
-void regis() {
-    char username[1024] = {};
-    char password[1024] = {};
-    FILE *src = fopen("akun.txt", "a+");
-    getInput(username, password);
-    char file[1024] = {};
-    if(checkId(src, username)) {
-        char *fail = "Account is already registered\n";
-        send(sd , fail, strlen(fail) , 0 );
-    } else {
-        FILE *src = fopen("akun.txt", "a+");
-        char cat[1024];
-        strcpy(cat, username);
-        strcat(cat, ":");
-        strcat(cat, password);
-        fprintf(src, "%s:%s\n", username, password);
-        char *success = "Register success\n";
-        send(sd , success, strlen(success) , 0 );
-    }
-    fclose(src);
+int getCredentials(int fd, char *id, char *password)
+{
+    if (getInput(fd, "Insert id: ", id) == 0) return 0;
+    if (getInput(fd, "Insert password: ", password) == 0) return 0;
+    return 1;
 }
 
-bool checkId(FILE *src, char* id) {
-    char file[1024] = {};
-    while(fscanf(src, "%s", file) != EOF) {
-        char *tmp = strtok(file, ":");
-        if(!strcmp(id, tmp)) {
-            fclose(src);
-            return true;
-        }
+bool validLogin(FILE *fp, char *id, char *password)
+{
+    char db[DATA_BUFFER], input[DATA_BUFFER];
+    sprintf(input, "%s:%s", id, password);
+    while (fscanf(fp, "%s", db) != EOF) {
+        if (strcmp(db, input) == 0) return true;
     }
-    fclose(src);
     return false;
+}
+
+bool isRegistered(FILE *fp, char *id)
+{
+    char db[DATA_BUFFER], *tmp;
+    while (fscanf(fp, "%s", db) != EOF) {
+        tmp = strtok(db, ":");
+        if (strcmp(tmp, id) == 0) return true;
+    }
+    return false;
+}
+
+bool alreadyDownloaded(FILE *fp, char *filename)
+{
+    char db[DATA_BUFFER], *tmp;
+    while (fscanf(fp, "%s", db) != EOF) {
+        tmp = getFileName(strtok(db, "\t"));
+        if (strcmp(tmp, filename) == 0) return true;
+    }
+    return false;
+}
+
+int getInput(int fd, char *prompt, char *storage)
+{
+    send(fd, prompt, SIZE_BUFFER, 0);
+
+    int valread = read(fd, storage, DATA_BUFFER);
+    if (valread != 0) printf("Input: [%s]\n", storage);
+    return valread;
 }
