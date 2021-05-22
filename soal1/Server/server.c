@@ -54,7 +54,7 @@ int main()
     while (TRUE) {
         new_fd = accept(server_fd, (struct sockaddr *)&new_addr, &addrlen);
         if (new_fd >= 0) {
-            // printf("Accepted a new connection with fd: %d\n", new_fd);
+            printf("Accepted a new connection with fd: %d\n", new_fd);
             pthread_create(&tid, NULL, &menu, (void *) &new_fd);
         } else {
             fprintf(stderr, "Accept failed [%s]\n", strerror(errno));
@@ -161,34 +161,79 @@ void *menu(void *argv)
     close(fd);
 }
 
-void see(char *buff, int fd, bool isFind)
+void login(int fd)
 {
-    int counter = 0;
-    FILE *src = fopen("files.tsv", "r");
-    if (!src) {
-        write(fd, "Files.tsv not found\n", SIZE_BUFFER);
+    if (curr_fd != -1) {
+        send(fd, "Server is busy. Please wait until other client has logout.\n", SIZE_BUFFER, 0);
         return;
     }
+    char id[DATA_BUFFER], password[DATA_BUFFER];
+    FILE *fp = fopen("akun.txt", "a+");
 
-    char temp[DATA_BUFFER + 85], raw_filename[DATA_BUFFER/3], ext[5],
-        filepath[DATA_BUFFER/3], publisher[DATA_BUFFER/3], year[10];
-        
-    while (fscanf(src, "%s\t%s\t%s", filepath, publisher, year) != EOF) {
-        parseFilePath(filepath, raw_filename, ext);
-        if (isFind && strstr(raw_filename, buff) == NULL) continue;
-        counter++;
-
-        sprintf(temp, 
-            "Nama: %s\nPublisher: %s\nTahun publishing: %s\nEkstensi File: %s\nFilepath: %s\n\n",
-            raw_filename, publisher, year, ext, filepath
-        );
-        write(fd, temp, SIZE_BUFFER);
+    if (getCredentials(fd, id, password) != 0) {
+        if (validLogin(fp, id, password)) {
+            send(fd, "Login success\n", SIZE_BUFFER, 0);
+            curr_fd = fd;
+            strcpy(auth_user[0], id);
+            strcpy(auth_user[1], password);
+        } else {
+            send(fd, "Wrong ID or Password\n", SIZE_BUFFER, 0);
+        }
     }
-    if(counter == 0) {
-        if (isFind) write(fd, "Query not found in files.tsv\n", SIZE_BUFFER);
-        else write(fd, "Empty files.tsv\n", SIZE_BUFFER);
-    } 
-    fclose(src);
+    fclose(fp);
+}
+
+void regist(int fd)
+{
+    char id[DATA_BUFFER], password[DATA_BUFFER];
+    FILE *fp = fopen("akun.txt", "a+");
+
+    if (getCredentials(fd, id, password) != 0) {
+        if (isRegistered(fp, id)) {
+            send(fd, "ID is already registered\n", SIZE_BUFFER, 0);
+        } else {
+            fprintf(fp, "%s:%s\n", id, password);
+            send(fd, "Register success. Account created\n", SIZE_BUFFER, 0);
+        }
+    }
+    fclose(fp);
+}
+
+void add(int fd)
+{
+    char *dirName = "FILES";
+    char publisher[DATA_BUFFER], year[DATA_BUFFER], client_path[DATA_BUFFER];
+    if (getInput(fd, "Publisher: ", publisher) == 0) return;
+    if (getInput(fd, "Tahun Publikasi: ", year) == 0) return;
+    if (getInput(fd, "Filepath: ", client_path) == 0) return;
+
+    FILE *fp = fopen("files.tsv", "a+");
+    char *fileName = getFileName(client_path);
+
+    if (alreadyDownloaded(fp, fileName)) {
+        send(fd, "Error: file is already uploaded\n", SIZE_BUFFER, 0);
+    } else {
+        send(fd, "Start sending file\n", SIZE_BUFFER, 0);
+        if (writeFile(fd, dirName, fileName) == 0) {
+            fprintf(fp, "%s/%s\t%s\t%s\n", dirName, fileName, publisher, year);
+            printf("Store file finished\n");
+            _log("add", fileName);
+        } else {
+            printf("Error occured when receiving file\n");
+        }
+    }
+    fclose(fp);
+}
+
+void download(char *filename, int fd)
+{
+    FILE *fp = fopen("files.tsv", "a+");
+    if (alreadyDownloaded(fp, filename)) {
+        sendFile(fd, filename);
+    } else {
+        send(fd, "Error: File hasn't been downloaded\n", SIZE_BUFFER, 0);
+    }
+    fclose(fp);
 }
 
 void delete(char *filename, int fd)
@@ -229,79 +274,34 @@ void delete(char *filename, int fd)
     }
 }
 
-void download(char *filename, int fd)
+void see(char *buff, int fd, bool isFind)
 {
-    FILE *fp = fopen("files.tsv", "a+");
-    if (alreadyDownloaded(fp, filename)) {
-        sendFile(fd, filename);
-    } else {
-        send(fd, "Error: File hasn't been downloaded\n", SIZE_BUFFER, 0);
-    }
-    fclose(fp);
-}
-
-void add(int fd)
-{
-    char *dirName = "FILES";
-    char publisher[DATA_BUFFER], year[DATA_BUFFER], client_path[DATA_BUFFER];
-    if (getInput(fd, "Publisher: ", publisher) == 0) return;
-    if (getInput(fd, "Tahun Publikasi: ", year) == 0) return;
-    if (getInput(fd, "Filepath: ", client_path) == 0) return;
-
-    FILE *fp = fopen("files.tsv", "a+");
-    char *fileName = getFileName(client_path);
-
-    if (alreadyDownloaded(fp, fileName)) {
-        send(fd, "Error: file is already uploaded\n", SIZE_BUFFER, 0);
-    } else {
-        send(fd, "Start sending file\n", SIZE_BUFFER, 0);
-        if (writeFile(fd, dirName, fileName) == 0) {
-            fprintf(fp, "%s/%s\t%s\t%s\n", dirName, fileName, publisher, year);
-            printf("Store file finished\n");
-            _log("add", fileName);
-        } else {
-            printf("Error occured when receiving file\n");
-        }
-    }
-    fclose(fp);
-}
-
-void login(int fd)
-{
-    if (curr_fd != -1) {
-        send(fd, "Server is busy. Please wait until other client has logout.\n", SIZE_BUFFER, 0);
+    int counter = 0;
+    FILE *src = fopen("files.tsv", "r");
+    if (!src) {
+        write(fd, "Files.tsv not found\n", SIZE_BUFFER);
         return;
     }
-    char id[DATA_BUFFER], password[DATA_BUFFER];
-    FILE *fp = fopen("akun.txt", "a+");
 
-    if (getCredentials(fd, id, password) != 0) {
-        if (validLogin(fp, id, password)) {
-            send(fd, "Login success\n", SIZE_BUFFER, 0);
-            curr_fd = fd;
-            strcpy(auth_user[0], id);
-            strcpy(auth_user[1], password);
-        } else {
-            send(fd, "Wrong ID or Password\n", SIZE_BUFFER, 0);
-        }
+    char temp[DATA_BUFFER + 85], raw_filename[DATA_BUFFER/3], ext[5],
+        filepath[DATA_BUFFER/3], publisher[DATA_BUFFER/3], year[10];
+        
+    while (fscanf(src, "%s\t%s\t%s", filepath, publisher, year) != EOF) {
+        parseFilePath(filepath, raw_filename, ext);
+        if (isFind && strstr(raw_filename, buff) == NULL) continue;
+        counter++;
+
+        sprintf(temp, 
+            "Nama: %s\nPublisher: %s\nTahun publishing: %s\nEkstensi File: %s\nFilepath: %s\n\n",
+            raw_filename, publisher, year, ext, filepath
+        );
+        write(fd, temp, SIZE_BUFFER);
     }
-    fclose(fp);
-}
-
-void regist(int fd)
-{
-    char id[DATA_BUFFER], password[DATA_BUFFER];
-    FILE *fp = fopen("akun.txt", "a+");
-
-    if (getCredentials(fd, id, password) != 0) {
-        if (isRegistered(fp, id)) {
-            send(fd, "ID is already registered\n", SIZE_BUFFER, 0);
-        } else {
-            fprintf(fp, "%s:%s\n", id, password);
-            send(fd, "Register success. Account created\n", SIZE_BUFFER, 0);
-        }
-    }
-    fclose(fp);
+    if(counter == 0) {
+        if (isFind) write(fd, "Query not found in files.tsv\n", SIZE_BUFFER);
+        else write(fd, "Empty files.tsv\n", SIZE_BUFFER);
+    } 
+    fclose(src);
 }
 
 void _log(char *cmd, char *filename)
