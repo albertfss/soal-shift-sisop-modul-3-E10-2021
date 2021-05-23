@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <pthread.h> 
 #include <unistd.h>
 #include <time.h>
 #include <sys/ipc.h>
@@ -13,6 +13,7 @@
 
 int matrix1[r1][c1];
 int matrix2[r2][c2];
+int matrix_key[r1*c2];
 
 void *multiplier(void *argv) {
     int *result = (int*)argv;
@@ -29,23 +30,21 @@ void *multiplier(void *argv) {
 
 int main() {
 
+    key_t key = 1945;
+    int shmid = shmget(key, sizeof(int) * r1 * c2, IPC_CREAT | 0666);
+    int* res = (int*)shmat(shmid, NULL, 0);
+
     int i, j, k;
 
     printf("Matriks 1 (4 x 3) :\n");
-    for (i = 0; i < r1; i++) {
-        for (j = 0; j < c1; j++) { 
-             scanf("%d", &matrix1[i][j]);
-        }
-    }
-        
+    for (i = 0; i < r1; i++)
+        for (j = 0; j < c1; j++)
+            scanf("%d", &matrix1[i][j]);
 
     printf("Matriks 2 (3 x 6) :\n");
-    for (i = 0; i < r2; i++) {
-        for (j = 0; j < c2; j++) { 
+    for (i = 0; i < r2; i++)
+        for (j = 0; j < c2; j++)
             scanf("%d", &matrix2[i][j]);
-        }
-    }
-        
 
     pthread_t *threadsid;
     threadsid=(pthread_t*)malloc((24)*sizeof(pthread_t));
@@ -78,7 +77,15 @@ int main() {
 
         printf("%d ",*p);
         if((i + 1) % c2 == 0) printf("\n");
+
+        matrix_key[i] = *p;
     }
 
+    for (i = 0; i < r1*c2; i++) {
+        res[i] = matrix_key[i];
+    }
+
+    shmdt(res);
+    exit(0);
     return 0;
 }
