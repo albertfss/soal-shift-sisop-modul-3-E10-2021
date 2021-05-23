@@ -44,6 +44,7 @@ int main() {
     matrix_b = (int*) malloc(24 * sizeof(int));
     result = (ll*) malloc(24 * sizeof(ll));
     
+    printf("Matriks B (4 x 6) :\n");
     for(int i=0;i<24;i++) {
         scanf("%d",&matrix_b[i]);
     }
@@ -67,6 +68,7 @@ int main() {
         }
     }
 
+    printf("Hasil :\n");
     for(int i=0;i<24;i++){
         if(i%6==0)
             printf("\n");
