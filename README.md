@@ -354,7 +354,7 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
     Dilakukan looping untuk memindahkan nilai matrix_key ke dalam variabel shared memory ```res```.
     
 - ### **Screenshot 2a**
-![2a](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2014-33-26.png)
+![2a](https://i.ibb.co/3ctsRtM/2a.png)
 
 ## **2B**
 
@@ -450,8 +450,8 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
     Digunakan untuk melakukan free shared memory.
     
 - ### **Screenshot 2b**
-![2b](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2016-31-39.png)
-    
+![2b](https://i.ibb.co/BfWGXQV/2b.png)
+
 ## **2C**
 
 - ### **Soal**
@@ -536,7 +536,7 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
     Gunakan fork lagi untuk mengeksekusi perintah ```head -5```. Pada bagian ini, program akan menampilkan 5 data teratas yang memakan sumber daya dengan urutan dari yang terbesar hingga yang terkecil.
 
 - ### **Screenshot 2c**
-![2c](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2019-25-16.png)
+![2c](https://i.ibb.co/3rCxdBq/2c.png)
 
 ## **Kendala**
 - Saat masa praktikum hanya dapat mengerjakan bagian a karena bertabrakan dengan jadwal ETS.
