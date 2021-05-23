@@ -552,22 +552,156 @@ Membuat sebuah program C agar untuk mengkategorikan file. Program ini akan memin
 Program menerima opsi -f seperti contoh di atas, jadi pengguna bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna.
 
 - ### **Penyelesaian**
-
+```
+//perintah -f
+if (strcmp(argv[1],"-f")==0)
+    {  
+        perintah = argv[1];
+        int jumlah = 2;
+        int jalankan = 2;
+        while (jumlah < argc) 
+        {
+            pthread_create(&(thread[jumlah]), NULL, myFile, (char*)argv[jumlah]);
+            jumlah++;
+        }
+        while (jalankan < argc) 
+        {
+            pthread_join(thread[jalankan],NULL);
+            jalankan++;
+        }
+    }
+```
 ## **3B**
 - ### **Soal**
 Program dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. 
 
 - ### **Penyelesaian**
+```
+//Perintah "-d"
+    else if (strcmp(argv[1],"-d") == 0 ) 
+    { 
+        perintah = argv[1];
+        recursive(argv[2]);
+        for(int i=0; i<nomor; i++)
+        {
+            pthread_create(&(thread[i]), NULL, myFile, (char*)namaFilesNih[i]);
+        }
+        for(int i=0; i<nomor; i++)
+        {
+            pthread_join(thread[i],NULL);
+        }
+        if(keberhasilan == 1)
+        {
+            printf("Direktori sukses disimpan!\n");
+        }else
+        {
+            printf("Yah, gagal disimpan :(\n");
+        }
+    }
+```
+aa
+```
+void recursive(char *basePath)
+{
+    char path[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(basePath);
 
+    if (!dir)
+        return;
+
+    while ((dp = readdir(dir)) != NULL)
+    {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        { 
+            strcpy(path, basePath);
+            strcat(path, "/");
+            strcat(path, dp->d_name);
+            strcpy(namaFilesNih[nomor], path);
+            nomor++;
+            recursive(path);
+        }
+    }
+    closedir(dir);
+}
+```
 ## **3C**
 - ### **Soal**
  Program ini menerima opsi *
  Opsi ini akan mengkategorikan seluruh file yang ada di working directory ketika menjalankan program C tersebut.
 
 - ### **Penyelesaian**
+```
+// Perintah "*"
+    else if (strcmp(argv[1],"*") == 0 ) 
+    { 
+        perintah = argv[1];
+        recursive(".");
+        for(int i=0; i<nomor; i++)
+        {
+            pthread_create(&(thread[i]), NULL, myFile, (char*)namaFilesNih[i]);
+        }
+        for(int i=0; i<nomor; i++)
+        {
+            pthread_join(thread[i],NULL);
+        }
+        if(keberhasilan == 1)
+        {
+            printf("Yah, gagal disimpan :(\n");
+        }
+        else
+        {
+            printf("Direktori sukses disimpan!\n");
+        }
+    }
+    return 0;
+```
 
 ## **3D & 3E**
 - ### **Soal**
 Semua file harus berada di dalam folder, jika terdapat file yang tidak memiliki ekstensi, file disimpan dalam folder “Unknown”. Jika file hidden, masuk folder “Hidden”. Setiap 1 file yang dikategorikan dioperasikan oleh 1 thread
 
 - ### **Penyelesaian**
+```
+if(namaFiles[0]=='.')
+    {
+        ext = "hidden";
+    }
+    else
+    {
+        namaFiles = strtok(namaFiles, ".");
+        if(strcmp(namaFilesLama, namaFiles)==0)
+        {
+            ext = "unknown"; 
+        }
+        else
+        {
+            ext = strtok(NULL, "");
+            for (int i=0;i < strlen(ext);i++)
+            {
+                ext[i] = tolower(ext[i]);
+            }
+        }
+    }
+```
+ne
+```
+
+pthread_t thread[1000];
+int many =1;
+char *perintah;
+int keberhasilan = 1;
+
+void *myFile (void *judulFiles) 
+{
+    char *ext;
+    char judulBaru[2000];
+    char *judulFiles1 = (char*) judulFiles;
+    snprintf(judulBaru, sizeof judulBaru, "%s", judulFiles1);
+    char *judul = judulFiles;
+    char *namaFiles;
+    namaFiles = strrchr(judulFiles, '/');
+    namaFiles = strtok(namaFiles, "/");
+    char namaFilesLama[10000];
+    snprintf(namaFilesLama, sizeof namaFilesLama, "%s", namaFiles);
+```
