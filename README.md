@@ -571,6 +571,8 @@ if (strcmp(argv[1],"-f")==0)
         }
     }
 ```
+Pertama akan dibandingkan array ```argv``` dengan ```-f```, ini untuk mengecek perintah yang dimasukkan sesuai dengan -f. Apabila benar akan dilanjutkan dengan melakukan looping sebanyak argumen file yang diinput. Kemudian file tersebut dimasukkan ke thread yang dibuat untuk memindahkan filenya. Pada bagian loop selanjutnya digunakan ```pthread_join``` untuk mengecek bahwa program sebelumnya telah selesai baru dilanjutkan dengan yang berikutnya.
+
 ## **3B**
 - ### **Soal**
 Program dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. 
@@ -599,7 +601,7 @@ Program dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directo
         }
     }
 ```
-aa
+Pertama akan dibandingkan array ```argv``` dengan ```-d```, ini untuk mengecek perintah yang dimasukkan sesuai, yaitu -f. Mirip dengan sebelumnya, disini dilakukan loop untuk membuat proses yang kemudian dimasukkan ke thread yang dibuat. ```pthread_join``` untuk memastikan proses sebelumnya seelsai
 ```
 void recursive(char *basePath)
 {
@@ -625,6 +627,8 @@ void recursive(char *basePath)
     closedir(dir);
 }
 ```
+Disini dibuat fungsi rekursif. Fungsi ini dibuat untuk melakukan traverse directory. ```DIR *dir = opendir(basePath);``` merupakan pointer yang akan menunjuk ke directory. Selanjutnya dilakukan looping selama terdapat file/folder di dalam directory tersebut
+
 ## **3C**
 - ### **Soal**
  Program ini menerima opsi *
@@ -656,6 +660,7 @@ void recursive(char *basePath)
     }
     return 0;
 ```
+Pertama akan dibandingkan array ```argv``` dengan ```*```, ini untuk mengecek perintah yang dimasukkan sesuai, yaitu ```*```. Masih mirip dengan sebelumnya, disini dilakukan loop untuk membuat proses yang kemudian dimasukkan ke thread yang dibuat. Apabila proses tidak berhasil dilakukan maka akan variabel ***keberhasilan*** akan mengembalikan nilai 1 dan mengeluarkan pesan pemberitahuan gagal. Jika nilai keberhasilan selain 1 berarti proses berhasil dilakukan dan mengeluarkan output berhasil.
 
 ## **3D & 3E**
 - ### **Soal**
@@ -667,7 +672,7 @@ if(namaFiles[0]=='.')
     {
         ext = "hidden";
     }
-    else
+   else
     {
         namaFiles = strtok(namaFiles, ".");
         if(strcmp(namaFilesLama, namaFiles)==0)
@@ -684,7 +689,10 @@ if(namaFiles[0]=='.')
         }
     }
 ```
-ne
+Pertama, akan dicek nama file yang ada. Jika file memiliki karakter awal '.' maka file tersebut akan dimasukkan ke kategori hidden. 
+Kondisi lain mengecek ```namaFiles = strtok(namaFiles, ".");```. Apabila tidak ada kata yang dapat dipisahkan (tidak ada titik) maka file tersebut akan dikategorikan ke unknown, karena tidak memiliki ekstensi.
+
+Terdapat catatan pada soal yaitu Program ini tidak case sensitive. Maka sintaks ```ext[i] = tolower(ext[i]);``` yang mengondisikan hal tersebut.
 ```
 
 pthread_t thread[1000];
@@ -705,3 +713,4 @@ void *myFile (void *judulFiles)
     char namaFilesLama[10000];
     snprintf(namaFilesLama, sizeof namaFilesLama, "%s", namaFiles);
 ```
+Bagian ini merupakan fungsi di awal. Fungsi inilah yang akan mengkategorikan suatu file dengan cara mendapatkan nama file beserta ekstensinya.
