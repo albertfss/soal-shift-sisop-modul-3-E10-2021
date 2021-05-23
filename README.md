@@ -452,5 +452,90 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
 - ### **Screenshot 2b**
 ![2b](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2016-31-39.png)
     
+## **2C**
+
+- ### **Soal**
+    Crypto juga membuat program (soal2c.c) untuk mengecek 5 proses teratas apa saja yang memakan resource komputernya dengan command “ps aux | sort -nrk 3,3 | head -5”.
+
+- ### **Penyelesaian**
+    Pada soal 2c ini digunakan 2 buah pipe dan 3 kali fork untuk mengeksekusi perintah yang diberikan untuk memnunjukkan 5 proses teratas yang memakan resource.
+    ```
+    int pid;
+    int fd1[2];
+    int fd2[2];
+
+    if (pipe(fd1) == -1) {
+        perror("bad pipe1");
+        exit(1);
+    }
+
+    if ((pid = fork()) == -1) {
+        perror("bad fork1");
+        exit(1);
+    } 
+    else if (pid == 0) {
+        dup2(fd1[1], 1);
+
+        close(fd1[0]);
+        close(fd1[1]);
+
+        char *argv[] = {"ps", "aux", NULL};
+            execv("/bin/ps", argv);
+        perror("ps aux execute doesnt work");
+        _exit(1);
+    }
+    ```
+    Create pipe 1 dengan nama ```fd1``` lalu gunakan fork untuk mengeksekusi perintah ```ps aux```. Pada bagian ini, program menunjukkan list proses yang sedang berjalan dengan status dan penggunaan sumber dayanya.
+    ```
+    if (pipe(fd2) == -1) {
+        perror("bad pipe2");
+        exit(1);
+    }
+
+    if ((pid = fork()) == -1) {
+        perror("bad fork2");
+        exit(1);
+    } 
+    else if (pid == 0) {
+        dup2(fd1[0], 0);
+        dup2(fd2[1], 1);
+
+        close(fd1[0]);
+        close(fd1[1]);
+        close(fd2[0]);
+        close(fd2[1]);
+ 
+        char *argv[] = {"sort", "-nrk", "3.3", NULL};
+            execv("/usr/bin/sort", argv);
+        perror("sort execute doesnt work");
+        _exit(1);
+    }
+    
+    close(fd1[0]);
+    close(fd1[1]);
+    ```
+    Create pipe 2 dengan menggunakan fd2 lalu gunakan fork untuk mengeksekusi perintah ```sort -nrk 3,3```. Pada bagian ini, penampilan data pada list akan diurutkan oleh program.
+    ```
+    if ((pid = fork()) == -1) {
+        perror("bad fork3");
+        exit(1);
+    } 
+    else if (pid == 0) {
+        dup2(fd2[0], 0);
+
+        close(fd2[0]);
+        close(fd2[1]);
+
+        char *argv[] = {"head", "-5", NULL};
+            execv("/usr/bin/head", argv);
+
+        perror("head execute doesnt work");
+        _exit(1);
+    }
+    ```
+    Gunakan fork lagi untuk mengeksekusi perintah ```head -5```. Pada bagian ini, program akan menampilkan 5 data teratas yang memakan sumber daya dengan urutan dari yang terbesar hingga yang terkecil.
+
+- ### **Screenshot 2c**
+![2c](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2019-25-16.png)
 
 # Soal 3
