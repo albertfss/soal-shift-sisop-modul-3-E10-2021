@@ -543,3 +543,31 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
 - Untuk bagian c masih belum sepenuhnya memahami cara kerja pipe sehingga terdapat kendala.
 
 # Soal 3
+- Soal ini dikerjakan oleh 05111940000116 - Albert Filip Silalahi
+
+Membuat sebuah program C agar untuk mengkategorikan file. Program ini akan memindahkan file sesuai ekstensinya ke dalam folder sesuai ekstensinya yang folder hasilnya terdapat di working directory ketika program kategori tersebut dijalankan.
+
+## **3A**
+- ### **Soal**
+Program menerima opsi -f seperti contoh di atas, jadi pengguna bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna.
+
+- ### **Penyelesaian**
+
+## **3B**
+- ### **Soal**
+Program dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. 
+
+- ### **Penyelesaian**
+
+## **3C**
+- ### **Soal**
+ Program ini menerima opsi *
+ Opsi ini akan mengkategorikan seluruh file yang ada di working directory ketika menjalankan program C tersebut.
+
+- ### **Penyelesaian**
+
+## **3D & 3E**
+- ### **Soal**
+Semua file harus berada di dalam folder, jika terdapat file yang tidak memiliki ekstensi, file disimpan dalam folder “Unknown”. Jika file hidden, masuk folder “Hidden”. Setiap 1 file yang dikategorikan dioperasikan oleh 1 thread
+
+- ### **Penyelesaian**
