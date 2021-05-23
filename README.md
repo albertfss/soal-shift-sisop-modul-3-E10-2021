@@ -450,7 +450,7 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
     Digunakan untuk melakukan free shared memory.
     
 - ### **Screenshot 2b**
-
+![2b](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2016-31-39.png)
     
 
 # Soal 3
