@@ -538,4 +538,8 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
 - ### **Screenshot 2c**
 ![2c](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2019-25-16.png)
 
+## **Kendala**
+- Saat masa praktikum hanya dapat mengerjakan bagian a karena bertabrakan dengan jadwal ETS.
+- Untuk bagian c masih belum sepenuhnya memahami cara kerja pipe sehingga terdapat kendala.
+
 # Soal 3
