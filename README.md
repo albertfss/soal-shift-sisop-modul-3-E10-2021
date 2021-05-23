@@ -356,5 +356,101 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
 - ### **Screenshot 2a**
 ![2a](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2014-33-26.png)
 
+## **2B**
+
+- ### **Soal**
+    Membuat program dengan menggunakan matriks output dari program sebelumnya (program soal2a.c). Kemudian matriks tersebut akan dilakukan perhitungan dengan matrix baru (input user). Perhitungannya adalah setiap cel yang berasal dari matriks A menjadi angka untuk faktorial, lalu cel dari matriks B menjadi batas maksimal faktorialnya matriks.
+
+- ### **Penyelesaian**
+    Pada soal ini menggunakan shared memory untuk mendapatkan nilai dari matriks pada soal 2a dan menggunakan thread untuk menghitung faktorial dari matriksnya.
+    ```
+    typedef long long int ll;
+
+    int *shared_matrix, *matrix_b;
+    ll *result;
+
+    typedef struct pair{
+        int a;
+        int b;
+        int index;
+    }pair;
+    ```
+    Dideklarasikan variabel shared_matrix dan matrix_b untuk menampung nilai matriks dari soal 2a dan matriks yang akan diinput sebagai batas. Variabel pointer bertipe long long int ```result``` berfungsi untuk menyimpan nilai akhir dari perhitungan faktorial matriks. struct ```pair``` digunakan untuk passing ke thread. Variabel ```a``` berfungsi untuk menyimpan nilai dari matrix_shared, ```b``` berfungsi untuk menyimpan nilai dari matrix_b dan ```index``` yang berfungsi menyimpan indeks matriks.
+    ```
+    key_t key = 1945;
+
+    int shmid = shmget(key, sizeof(int)*24, IPC_CREAT | 0666);
+    shared_matrix = shmat(shmid, NULL, 0);
+    ```
+    Berfungsi untuk mengambil shared memory dari soal2a.c yang merupakan matriks A. shared_matriks menampung nilai-nilai dari matriks hasil dari soal2a.c.
+    ```
+    matrix_b = (int*) malloc(24 * sizeof(int));
+    result = (ll*) malloc(24 * sizeof(ll));
+    
+    printf("Matriks B (4 x 6) :\n");
+    for(int i=0;i<24;i++) {
+        scanf("%d",&matrix_b[i]);
+    }
+    ```
+    Variabel matrix_b dan result diinisialisasi sebesar 24 integer. Lalu, user menginput isi dari matriks b dengan menggunakan looping.
+    ```
+    pthread_t threadsid[24];
+
+    for(int i=0;i<24;i++){
+        pair *tes = (pair*)malloc(sizeof(*tes));
+        tes->a = shared_matrix[i];
+        tes->b = matrix_b[i];
+        tes->index = i;
+        if(pthread_create(&threadsid[i],NULL,factorial,(void *)tes)!=0){
+            fprintf(stderr, "error: Cannot create thread # %d\n",i);
+        }
+    }
+    ```
+    Deklarasi array thread dengan besar 24 karena terdapat 24 cell dan masing-masing cell terdiri dari 1 thread. Lalu, dilakukan looping dengan batas 24. Didalam looping tersebut dideklarasikan variabel pointer bertipe pair dengan ukuran sebesar variabel tersebut. Secara satu per satu value dari shared_matrix dan matrix_b indeks ke i disimpan ke dalam variabel pair dan nilai looping variabelnya juga disimpan ke dalam variabel pair. Lalu dibuat thread dengan fungsi factorial dan argumen ```tes```.
+    ```
+    void *factorial(void *y){
+        pair *temp = (pair *) y;
+        ll temp_result = 1, i;
+        if(temp->a == 0 || temp->b == 0){
+            result[temp->index] = 0;
+        }
+        else if(temp->a >= temp->b){
+            for (i = temp->a - temp->b + 1; i <= temp->a; i++) temp_result *= i;
+            result[temp->index] = temp_result;
+        }
+        else if(temp->a < temp->b) {
+            for (i = 1; i <= temp->a; i++) temp_result *= i;
+            result[temp->index] = temp_result;
+        }
+    }
+    ```
+    Fungsi ini berfungsi untuk menghitung nilai factorial dari matrix_shared dengan batas matrix_b. Variabel pointer bertipe data pair berfungsi untuk menyimpan nilai dari argumen yang dipassing dari fungsi main. Lalu, deklarasi variabel ```temp_result``` bertipe data long long int untuk menyimpan hasil dari perhitungan faktorial sementara.
+    Apabila nilai ```temp->a``` dan ```temp->b``` bernilai 0 maka pada result dengan indeks ke i (nilai indeks yang di passing) akan diisi dengan nilai 0. Apabila ```temp->a``` lebih besar dari sama dengan ```temp->b``` maka akan dilakukan looping dengan inisiasi ```for(i = temp->a - temp->b + 1; i <= temp->a; i++)```. Apabila ```temp->a``` kurang dari ```temp->b``` maka akan dilakukan looping dengan inisiasi ```for(i = 1; i <= temp->a; i++)```. Pada saat looping dilakukan perkalian variabel looping ```i``` dengan variabel yang menyimpan hasil sementara. Lalu hasil disimpan pada variabel ```result```.
+    ```
+    for (int i = 0; i < 24; ++i){
+      if (pthread_join(threadsid[i], NULL))
+        {
+          fprintf(stderr, "error: Cannot join thread # %d\n", i);
+        }
+    }
+
+    printf("Hasil :\n");
+    for(int i=0;i<24;i++){
+        if(i%6==0)
+            printf("\n");
+        printf("%lld\t",result[i]);
+    }
+    printf("\n");
+    shmdt(shared_matrix);
+    ```
+    thread dijoin dengan menggunakan looping dengan batas 24. Lalu hasil diprint menggunakan looping dengan batas 24.
+    ```
+    shmctl(shmid, IPC_RMID, NULL);
+    ```
+    Digunakan untuk melakukan free shared memory.
+    
+- ### **Screenshot 2b**
+
+    
 
 # Soal 3
