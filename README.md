@@ -247,6 +247,110 @@ Sesudah diunduh:
 
 ![1H](https://i.ibb.co/s57zSy5/Screenshot-from-2021-05-22-21-55-47.png)
 
-# Soal 2
+# **Soal 2**
+- Soal ini dikerjakan oleh Ahmad Luthfi Hanif - 05111940000179.
+- Semua matriks berasal dari input ke program.
+- Dilarang menggunakan system()
+
+Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai tantangan, dia ingin membantu Loba mengerjakan tugasnya. Detil dari tugas tersebut adalah:
+
+## **2A**
+
+- ### **Soal**
+
+    Membuat program perkalian matrix (4x3 dengan 3x6) dan menampilkan hasilnya. Matriks tersebut nantinya akan berisi angka 1-20 (tidak perlu dibuat filter angka).
+    
+- ### **Penyelesaian**
+    ```
+    #define r1 4
+    #define c1 3
+    #define r2 3
+    #define c2 6
+
+    int matrix1[r1][c1];
+    int matrix2[r2][c2];
+    int matrix_key[r1*c2];
+    ```
+    r1, c1, r2, dan c2 didefinisikan sebagai ukuran dari matrix1 (r1 x c1) dan matrix2 (r2 x c2). Setelah itu dideklarasikan array 2 dimensi yaitu matrix1 dan matrix2 untuk menyimpan nilai dari matriks yang diinput oleh user. Variabel matrix_key berfungsi untuk menyimpan hasil dari perkalian matrix1 dan matrix2 dan berfungsi untuk memindahkan hasil ke dalam variabel ```res``` yang nantinya akan digunakan untuk shared memory.
+    ```
+    key_t key = 1945;
+    int shmid = shmget(key, sizeof(int) * r1 * c2, IPC_CREAT | 0666);
+    int* res = (int*)shmat(shmid, NULL, 0);
+    ```
+    Membuat shared memory yang berukuran sebesar baris matriks 1 dan kolom matriks 2. Alamat dari shared memory di assign ke variable ```res``` yang nantinya akan menampung hasil dari perkalian matriks.
+    ```
+    printf("Matriks 1 (4 x 3) :\n");
+    for (i = 0; i < r1; i++)
+        for (j = 0; j < c1; j++)
+            scanf("%d", &matrix1[i][j]);
+
+    printf("Matriks 2 (3 x 6) :\n");
+    for (i = 0; i < r2; i++)
+        for (j = 0; j < c2; j++)
+            scanf("%d", &matrix2[i][j]);
+    ```
+    Loop yang digunakan agar user dapat menginput matriks 1 dan matriks 2.
+    ```
+    pthread_t *threadsid;
+    threadsid=(pthread_t*)malloc((24)*sizeof(pthread_t));
+
+    int count = 0;
+    int *result = NULL;
+    ```
+    Sebuah thread dengan nama ```threadsid``` dideklarasikan menjadi sebuah array dengan besar baris matriks 1 dan kolom matriks 2 yaitu sebesar 24. Variabel count berfungsi sebagai indeks dari thread. Variabel integer dengan pointer ```result``` dideklarasikan untuk menyimpan nilai sebuah matriks.
+    ```
+    for(i = 0; i < r1; i++) {
+        for(j = 0; j < c2; j++) {
+            result=(int *)malloc((24)*sizeof(int));
+            result[0]=c1;
+
+            for(k = 0; k < c1; k++) {
+                result[k+1]=matrix1[i][k];
+            }
+
+            for(k = 0; k < c1; k++) {
+                result[k+1+c1]=matrix2[k][j];
+            }
+
+            pthread_create(&(threadsid[count++]), NULL, &multiplier,(void*) result);
+        }
+    }
+    ```
+    Dilakukan nested loop sebesar baris matriks 1 x kolom matriks 2. Variabel result dijadikan sebagai array yang menyimpan nilai sebesar 24 integer. Didalam loop tersebut dilakukan looping lagi untuk memasukkan nilai matriks 1 dan matriks 2 berdasarkan r2/c1. Kedua nilai matriks tersebut diinput ke dalam array lurus ```result```. Lalu dibuat thread dengan fungsi ```multiplier``` dan argumen berupa ```result```.
+    ```
+    void *multiplier(void *argv) {
+        int *result = (int*)argv;
+        int x = 0;
+        int y = 0;
+
+        for(x = 1; x <= c1; x++)
+            y+=result[x]*result[x+c1];
+    
+        int *p=(int*)malloc(sizeof(int));
+        *p=y;
+        pthread_exit(p);
+    }
+    ```
+    Variabel x befungsi sebagai variabel looping dan variabel y berfungsi untuk menyimpan hasil dari perkalian matriks. Lalu dilakukan loop sebesar c1. Nilai y menyimpan hasil dari perkalian array result dengan indeks x dikali array result dengan indeks x+c1. Lalu deklarasikan sebuah array pointer untuk menyimpan nilai dari y. Lalu exit thread.
+    ```
+    printf("\nHasil :\n");
+    for (i = 0; i < r1*c2; i++) {
+        void *k;
+        pthread_join(threadsid[i], &k);
+        int *p=(int *)k;
+
+        printf("%d ",*p);
+        if((i + 1) % c2 == 0) printf("\n");
+
+        matrix_key[i] = *p;
+    }
+    ```
+    Lakukan loop sebesar baris matriks 1 dikalikan kolom matriks 2. threadsid dijoin pada loop ini lalu disimpan dalam variabel ```p``` lalu di print nilainya satu per satu. Array matrix_key berfungsi untuk menampung nilai matriks yang telah dikalikan dan shared memory.
+    ```
+    for (i = 0; i < r1*c2; i++) {
+        res[i] = matrix_key[i];
+    }
+    ```
+    Dilakukan looping untuk memindahkan nilai matrix_key ke dalam variabel shared memory ```res```.
 
 # Soal 3
