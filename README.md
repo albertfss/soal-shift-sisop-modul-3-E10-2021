@@ -576,6 +576,9 @@ Pertama akan dibandingkan array ```argv``` dengan ```-f```, ini untuk mengecek p
 - ### **Run & Output**
 <img width="355" alt="sisop1" src="https://user-images.githubusercontent.com/55067921/119265517-426f7a00-bc11-11eb-8554-b8d41c6a610e.png">
 <img width="356" alt="sisop2" src="https://user-images.githubusercontent.com/55067921/119265521-47ccc480-bc11-11eb-8143-3548fac13bfa.png">
+<img width="206" alt="sisop3" src="https://user-images.githubusercontent.com/55067921/119265665-b3169680-bc11-11eb-80e7-79d245bb0429.png">
+<img width="186" alt="sisop4" src="https://user-images.githubusercontent.com/55067921/119265668-b6118700-bc11-11eb-9488-e0f832a9b532.png">
+
 
 
 ## **3B**
@@ -634,6 +637,11 @@ void recursive(char *basePath)
 ```
 Disini dibuat fungsi rekursif. Fungsi ini dibuat untuk melakukan traverse directory. ```DIR *dir = opendir(basePath);``` merupakan pointer yang akan menunjuk ke directory. Selanjutnya dilakukan looping selama terdapat file/folder di dalam directory tersebut
 
+- ### **Run & Output**
+<img width="260" alt="sisop5" src="https://user-images.githubusercontent.com/55067921/119265607-7d71ad80-bc11-11eb-88cb-6db0cc6c0da0.png">
+<img width="640" alt="sisop6" src="https://user-images.githubusercontent.com/55067921/119265622-895d6f80-bc11-11eb-8b2a-09f479be6cbf.png">
+
+
 ## **3C**
 - ### **Soal**
  Program ini menerima opsi *
@@ -666,6 +674,11 @@ Disini dibuat fungsi rekursif. Fungsi ini dibuat untuk melakukan traverse direct
     return 0;
 ```
 Pertama akan dibandingkan array ```argv``` dengan ```*```, ini untuk mengecek perintah yang dimasukkan sesuai, yaitu ```*```. Masih mirip dengan sebelumnya, disini dilakukan loop untuk membuat proses yang kemudian dimasukkan ke thread yang dibuat. Apabila proses tidak berhasil dilakukan maka akan variabel ***keberhasilan*** akan mengembalikan nilai 1 dan mengeluarkan pesan pemberitahuan gagal. Jika nilai keberhasilan selain 1 berarti proses berhasil dilakukan dan mengeluarkan output berhasil.
+
+- ### **Run & Output**
+<img width="224" alt="sisop7" src="https://user-images.githubusercontent.com/55067921/119265649-a1cd8a00-bc11-11eb-826b-498ee03aa813.png">
+<img width="641" alt="sisop8" src="https://user-images.githubusercontent.com/55067921/119265655-a7c36b00-bc11-11eb-9a37-e7fbe1d121bc.png">
+
 
 ## **3D & 3E**
 - ### **Soal**
