@@ -573,6 +573,11 @@ if (strcmp(argv[1],"-f")==0)
 ```
 Pertama akan dibandingkan array ```argv``` dengan ```-f```, ini untuk mengecek perintah yang dimasukkan sesuai dengan -f. Apabila benar akan dilanjutkan dengan melakukan looping sebanyak argumen file yang diinput. Kemudian file tersebut dimasukkan ke thread yang dibuat untuk memindahkan filenya. Pada bagian loop selanjutnya digunakan ```pthread_join``` untuk mengecek bahwa program sebelumnya telah selesai baru dilanjutkan dengan yang berikutnya.
 
+- ### **Run & Output**
+<img width="355" alt="sisop1" src="https://user-images.githubusercontent.com/55067921/119265517-426f7a00-bc11-11eb-8554-b8d41c6a610e.png">
+<img width="356" alt="sisop2" src="https://user-images.githubusercontent.com/55067921/119265521-47ccc480-bc11-11eb-8143-3548fac13bfa.png">
+
+
 ## **3B**
 - ### **Soal**
 Program dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. 
