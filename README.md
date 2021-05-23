@@ -352,6 +352,8 @@ Crypto (kamu) adalah teman Loba. Karena Crypto adalah orang yang sangat menyukai
     }
     ```
     Dilakukan looping untuk memindahkan nilai matrix_key ke dalam variabel shared memory ```res```.
+    
+- ### **Screenshot 2a**
 ![2a](https://raw.githubusercontent.com/albertfss/soal-shift-sisop-modul-3-E10-2021/main/soal2/Screenshot%20from%202021-05-23%2014-33-26.png)
 
 
